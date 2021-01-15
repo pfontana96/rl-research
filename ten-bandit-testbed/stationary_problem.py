@@ -1,6 +1,7 @@
 """
 Script to verify advantages of e-Greedy agents over Greedy agents, both using sample-average
-action-value estimates, presented in Sutton (Reinforcement Learning 2018) p.29
+action-value estimates in stationary problems, presented in Sutton (Reinforcement Learning 
+2018) p.29
 """
 
 
