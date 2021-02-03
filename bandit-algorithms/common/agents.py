@@ -98,8 +98,8 @@ class UCB_SAAgent(SAAgent):
     """
     Upper-Confident-Bound Action selection Agent
     """
-    def __init__(self, N, c, epsilon=0, alpha=0.1):
-        super().__init__(N, epsilon, alpha)
+    def __init__(self, c, N, epsilon=0):
+        super(UCB_SAAgent, self).__init__(N, epsilon)
         self.c = c
 
     def step(self):
@@ -108,29 +108,28 @@ class UCB_SAAgent(SAAgent):
         into account the uncertainties of each action by the rule:
         At = argmax(Qt + c*sqrt(ln(t)/N(a)))
         """
-        # Step in time (choose an action)
-        prob = np.random.uniform()
-        if prob < self.epsilon:
-            # Exploratory move
-            N = self.Q.size
-            self.last_action = np.random.choice(np.array(range(N), dtype=int))
+        # No need for epsilon as exploration is controlled by c
+
+
+        # Step in time (choose an action)        
+        n = np.sum(self.action_count)
+        if n > 0: # Condition to evaluate on first iteration, because np.log(0) = -inf
+            mask = self.action_count > 0 # Mask to avoid division by 0 on the formula for upper confidence uncertainties
+            uncertainties = np.zeros(self.action_count.shape)
+            uncertainties[mask] = self.c*np.sqrt(np.log(n)/self.action_count[mask])
+            uncertainties[~mask] = float('inf') # We increment uncertainty of actions we've never chosen
         else:
-            # Eploitation move
-            n = np.sum(self.action_count)
-            bounds = np.where(self.action_count != 0, self.c*np.sqrt(np.log(n)/self.action_count), 10000) # To avoid division by 0, if N(a) = 0, we increase uncertainty
-            optimals = self.Q + bounds
-            
-            max_actions = np.argwhere(optimals == np.amax(optimals)).flatten() # greedy actions (max value)
-            if len(max_actions) == 1:
-                self.last_action = max_actions
-            else:
-                self.last_action = np.random.choice(max_actions)
+            uncertainties = np.array(np.repeat(float('inf'), len(self.action_count))) 
+        optimals = self.Q + uncertainties # Uncertainty rises the value of less chosen actions, hence promoting exploration
+        
+        max_actions = np.argwhere(optimals == np.amax(optimals)).flatten() # greedy actions (max value)
+        if len(max_actions) == 1:
+            self.last_action = max_actions
+        else:
+            self.last_action = np.random.choice(max_actions)
 
         return self.last_action
 
     # Return string for graph legend
     def __str__(self):
-        if self.epsilon == 0:
-            return "UBC"
-        else:
-            return "UBC (epsilon : " + str(self.epsilon) + ")"
+        return "UCB SAAgent"

@@ -1,7 +1,6 @@
 import numpy as np 
 import multiprocessing as mp
 from itertools import repeat
-from functools import partial
 import ctypes
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Testbeds ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
