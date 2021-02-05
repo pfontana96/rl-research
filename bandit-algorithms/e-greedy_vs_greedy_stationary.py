@@ -5,36 +5,21 @@ action-value estimates in stationary problems, presented in Sutton (Reinforcemen
 """
 from common.agents import SAAgent
 from common.enviroments import Enviroment, StatTestbed
-import matplotlib.pyplot as plt
+from common.utils import compare
+from pathlib import Path
 
 def main():
 
     k = 10
-    agents = [SAAgent(k), SAAgent(k, 0.1), SAAgent(k, 0.01)]
+    agents = [SAAgent(0, k), SAAgent(0.1, k), SAAgent(0.01, k)]
     testbed = StatTestbed(k)
     iterations = 2000
     plays = 1000
 
     env = Enviroment(agents, testbed, iterations, plays)
-    print("Running..")
-    score_avg, optimals_avg = env.run()
+    path = Path(__file__).resolve() # Path (and file name) to save the image
 
-    #Graph 1 - average score over time in independant iterations
-    plt.title("10-Armed TestBed - Average Rewards")
-    plt.plot(score_avg)
-    plt.ylabel('Average Reward')
-    plt.xlabel('Plays')
-    plt.legend(agents, loc=4)
-    plt.show()
-
-    #Graph 2 - optimal selections over all plays over time in independant iterations
-    plt.title("10-Armed TestBed - % Optimal Action")
-    plt.plot(optimals_avg * 100)
-    plt.ylim(0, 100)
-    plt.ylabel('% Optimal Action')
-    plt.xlabel('Plays')
-    plt.legend(agents, loc=4)
-    plt.show()
+    compare(env, path)
     
 if __name__ == "__main__":
     main()

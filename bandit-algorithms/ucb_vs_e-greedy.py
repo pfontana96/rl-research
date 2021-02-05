@@ -6,37 +6,22 @@ agents using Sample-Average estimates in stationary problems, presented in Sutto
 
 from common.enviroments import Enviroment, StatTestbed
 from common.agents import SAAgent, UCB_SAAgent
-import matplotlib.pyplot as plt
+from common.utils import compare
+from pathlib import Path
 
 def main():
     k = 10
     c = 2
     epsilon = 0.1
-    agents = [SAAgent(k, epsilon), UCB_SAAgent(c, k, 0)]
+    agents = [SAAgent(epsilon, k), UCB_SAAgent(c, k)]
     testbed = StatTestbed(k)
     iterations = 2000
     plays = 1000
 
     env = Enviroment(agents, testbed, iterations, plays)
-    print("Running..")
-    score_avg, optimals_avg = env.run()
+    path = Path(__file__).resolve() # Path (and file name) to save the image
 
-    #Graph 1 - average score over time in independant iterations
-    plt.title("{}-Armed TestBed - Average Rewards".format(k))
-    plt.plot(score_avg)
-    plt.ylabel('Average Reward')
-    plt.xlabel('Plays')
-    plt.legend(agents, loc=4)
-    plt.show()
-
-    #Graph 2 - optimal selections over all plays over time in independant iterations
-    plt.title("{}-Armed TestBed - % Optimal Action".format(k))
-    plt.plot(optimals_avg * 100)
-    plt.ylim(0, 100)
-    plt.ylabel('% Optimal Action')
-    plt.xlabel('Plays')
-    plt.legend(agents, loc=4)
-    plt.show()
+    compare(env, path)
 
 if __name__ == "__main__":
     main()
