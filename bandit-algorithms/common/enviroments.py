@@ -13,11 +13,12 @@ class StatTestbed(object):
         zero and unit standard deviation. The actual rewards are then calculated by sampling 
         normal distributions with mean q*(a) and unit deviation
     """
-    def __init__(self, k):
+    def __init__(self, k, **kwargs):
         self.k = k
+        self.mean = kwargs.get("mean", 0)
 
     def reset(self):
-        self.action_rewards = np.random.normal(0, 1, self.k) # Normal with mean 0 and unit deviation
+        self.action_rewards = np.random.normal(self.mean, 1, self.k) # Normal with mean 0 and unit deviation
     
     def getReward(self, action):
         return np.random.normal(self.action_rewards[action], 1, 1) # Normal with mean q*(a) and unit dev
@@ -36,7 +37,7 @@ class NStatTestbed(StatTestbed):
     """
 
     def reset(self):
-        initial_value = np.random.normal(0, 1, 1)
+        initial_value = np.random.normal(self.mean, 1, 1)
         self.action_rewards = np.repeat(initial_value, self.k)
     
     def getReward(self, action):

@@ -190,25 +190,21 @@ class GAgent(Agent):
     def __init__(self, alpha, N, **kwargs):
         super(GAgent, self).__init__(N)
         self.alpha = alpha
+        self.baseline = kwargs.get('baseline', True) # Default algorithm is with baseline
 
     def reset(self):
         # Reinitialise Agent values
-        self.H = np.zeros(self.N) # We use preferences instead of estimates
-        self.r_sum = np.zeros(self.N) # Reward Sum for each action
-        self.action_count = np.zeros(self.N) # Nb of times each action was taken
+        self.H = np.zeros(self.N, dtype=float) # We use preferences instead of estimates
+        self.r_sum = np.zeros(self.N, dtype=float) # Reward Sum for each action
+        self.action_count = np.zeros(self.N, dtype=int) # Nb of times each action was taken
+        self.last_pi = np.zeros(self.N, dtype=float) # Last probabilities for each action
         self.last_action = None
-        self.last_pi = None
 
     def step(self):
         e_H = np.exp(self.H - np.max(self.H))
-        pi = e_H / np.sum(e_H, axis=0) # Softmax (prob of taking each action)
-        max_actions = np.argwhere(pi == np.amax(pi)).flatten() # greedy actions (max value)
-        if len(max_actions) == 1:
-            self.last_action = max_actions
-        else:
-            self.last_action = np.random.choice(max_actions)
-
-        self.last_pi = pi[self.last_action]
+        policy = e_H / np.sum(e_H, axis=0) # Softmax (prob of taking each action)
+        self.last_action = np.random.choice(len(self.H), p=policy)
+        self.last_pi = policy
         return self.last_action
 
     def update(self, reward):
@@ -219,9 +215,20 @@ class GAgent(Agent):
         self.action_count[self.last_action] += 1
 
         n = np.sum(self.action_count, axis=0)
-        reward_avg = self.r_sum/n
-        self.H[self.last_action] -= self.alpha(reward - reward_avg)*self.last_pi
+        
+        # If a baseline is used, it should be the average reward obtained on all actions chosen
+        # not the average on the last action chosen (np.sum(self.r_sum)/n instead of 
+        # self.r_sum[self.last_action]/n )
+        reward_avg = np.sum(self.r_sum, axis=0)/n if self.baseline else 0 
+        # print("Reward: {} | Reward avg: {} | H[a_t]: {} | pi[a_t]: {}".format(reward, reward_avg, self.H[self.last_action], self.last_pi))
+        mask = np.full(len(self.H), False)
+        mask[self.last_action] = True
+
+        # We update preferences (we increase the last action taken and decrease the others)
+        self.H[mask] += self.alpha*(reward - reward_avg)*(1 - self.last_pi[mask])
+        self.H[~mask] -= self.alpha*(reward - reward_avg)*self.last_pi[~mask]
 
     # Return string for graph legend
     def __str__(self):
-        return "GAgent (alpha : " + str(self.alpha) + ")"
+        baseline = "with" if self.baseline else "without"
+        return "GAgent (alpha : " + str(self.alpha) + ") {} baseline".format(baseline)
