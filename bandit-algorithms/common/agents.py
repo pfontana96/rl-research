@@ -36,7 +36,7 @@ class Agent(abc.ABC):
 
 class SAAgent(Agent):
     """
-    Sample-Averages agent.
+    Sample-Averages e-Greedy agent.
     """
 
     def __init__(self, epsilon, N):
@@ -210,6 +210,10 @@ class GAgent(Agent):
     def update(self, reward):
         """
         Update preferences depending on reward obtained
+
+        The update rule for this algorithm is the folowing:
+        H_t+1[A_t] = H_t[A_t] + alpha(R_t - avg_R_t)*(1 - pi_t[A_t])
+        H_t+1[a] = H_t[A] - alpha(R_t - avg_R_t)*pi[a] for all a != A_t
         """
         self.r_sum[self.last_action] += reward
         self.action_count[self.last_action] += 1
@@ -220,13 +224,14 @@ class GAgent(Agent):
         # not the average on the last action chosen (np.sum(self.r_sum)/n instead of 
         # self.r_sum[self.last_action]/n )
         reward_avg = np.sum(self.r_sum, axis=0)/n if self.baseline else 0 
-        # print("Reward: {} | Reward avg: {} | H[a_t]: {} | pi[a_t]: {}".format(reward, reward_avg, self.H[self.last_action], self.last_pi))
-        mask = np.full(len(self.H), False)
-        mask[self.last_action] = True
 
-        # We update preferences (we increase the last action taken and decrease the others)
-        self.H[mask] += self.alpha*(reward - reward_avg)*(1 - self.last_pi[mask])
-        self.H[~mask] -= self.alpha*(reward - reward_avg)*self.last_pi[~mask]
+        # Vectorization of update rules into a single one
+        mask = np.zeros(len(self.H))
+        mask[self.last_action] = 1 # mask is equivalent to 1x==a
+
+        # We update preferences, we increase (or decrease) the last action taken based on the reward obtained
+        # compared to the average reward obtained and modify the rest of the action in the opposite direction
+        self.H += self.alpha*(reward - reward_avg)*(mask - self.last_pi)
 
     # Return string for graph legend
     def __str__(self):
